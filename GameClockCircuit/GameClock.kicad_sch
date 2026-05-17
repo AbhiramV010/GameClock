@@ -1,0 +1,20 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "73b5722a-9e8a-4547-8203-edba0ea72932")
+	(paper "USLetter")
+	(title_block
+		(title "Gamified Alarm Clock")
+		(date "2026-05-11")
+		(rev "1.0")
+		(company "Abhiram Vadali - 2026")
+	)
+	(lib_symbols)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
