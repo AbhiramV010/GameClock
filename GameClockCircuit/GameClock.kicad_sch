@@ -5,10 +5,13 @@
 	(uuid "73b5722a-9e8a-4547-8203-edba0ea72932")
 	(paper "USLetter")
 	(title_block
-		(title "Gamified Alarm Clock")
+		(title "Gamified Alarm Clock - GameClock")
 		(date "2026-05-11")
 		(rev "1.0")
-		(company "Abhiram Vadali - 2026")
+		(company "Abhiram Vadali")
+		(comment 1 "ATMega328p ")
+		(comment 2 "2026")
+		(comment 3 "**for lack of a better name, it's GameClock")
 	)
 	(lib_symbols)
 	(sheet_instances
