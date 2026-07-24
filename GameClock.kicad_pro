@@ -294,6 +294,7 @@
       "netlist": "",
       "plot": "",
       "specctra_dsn": "",
+      "step": "",
       "vrml": ""
     },
     "page_layout_descr_file": ""
@@ -413,15 +414,15 @@
       {
         "filename": "GameClock.kicad_sch",
         "name": "GameClock",
-        "uuid": "73b5722a-9e8a-4547-8203-edba0ea72932"
+        "uuid": "e6253b34-dbb8-48e3-92a2-59198aa224f5"
       }
     ],
-    "used_designators": "A1",
+    "used_designators": "U1-2,#PWR1,BT1,C1,J1,R1-5,SW1",
     "variants": []
   },
   "sheets": [
     [
-      "73b5722a-9e8a-4547-8203-edba0ea72932",
+      "e6253b34-dbb8-48e3-92a2-59198aa224f5",
       "GameClock"
     ]
   ],
