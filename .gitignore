@@ -99,3 +99,5 @@ dkms.conf
 
 .vscode/
 *.toml
+.history/
+.claude/
