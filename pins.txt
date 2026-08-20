@@ -1,0 +1,11 @@
+PIN MAPPING FOR THE GAME-CLOCK PROJECT
+
+IO22 → leftmost led
+IO21 → left led
+IO20 → right led
+IO19 → rightmost led
+
+IO12 → leftmost button
+IO13 → left button
+IO14 → right button
+IO15 → rightmost button

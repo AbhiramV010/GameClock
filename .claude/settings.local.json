@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($c = Get-Command kicad-cli -ErrorAction SilentlyContinue; if \\($c\\) { $c.Source } else { Get-ChildItem 'C:\\\\Program Files\\\\KiCad' -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName })",
+      "PowerShell(@\\('C:\\\\Program Files\\\\KiCad','C:\\\\Program Files \\(x86\\)\\\\KiCad',\"$env:LOCALAPPDATA\\\\Programs\\\\KiCad\"\\) | ForEach-Object { if \\(Test-Path $_\\) { Get-ChildItem $_ -Recurse -Filter 'kicad-cli.exe' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName } })",
+      "PowerShell($cli = 'C:\\\\Users\\\\abhir\\\\AppData\\\\Local\\\\Programs\\\\KiCad\\\\10.0\\\\bin\\\\kicad-cli.exe'; $out = 'C:\\\\Users\\\\abhir\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-abhir-OneDrive-Abhiram-Projects-GameClock\\\\462c0f1f-e987-4cfd-91d2-d27da0299e77\\\\scratchpad\\\\gameclock.net'; & $cli sch export netlist --format kicadsexpr -o $out 'C:\\\\Users\\\\abhir\\\\OneDrive\\\\Abhiram\\\\Projects\\\\GameClock\\\\GameClock.kicad_sch' 2>&1; if \\(Test-Path $out\\) { \"OK: $\\(\\(Get-Item $out\\).Length\\) bytes\" })",
+      "Bash(git rm *)",
+      "PowerShell($c = Get-Command arduino-cli -ErrorAction SilentlyContinue; if \\($c\\) { \"arduino-cli: $\\($c.Source\\)\"; & arduino-cli core list } else { \"arduino-cli not on PATH\" }; $ide = Get-Command arduino -ErrorAction SilentlyContinue; if \\($ide\\) { \"arduino IDE: $\\($ide.Source\\)\" })"
+    ]
+  }
+}
