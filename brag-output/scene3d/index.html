@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #0a0c0b; overflow: hidden; }
+  canvas { display: block; }
+</style>
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+
+const W = 1920, H = 1080;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.setClearColor(0x0a0c0b, 1);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, W / H, 1, 1000);
+
+scene.add(new THREE.HemisphereLight(0xdfe8e2, 0x0a0c0b, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(120, 180, 140);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xe0352b, 0.5);
+rim.position.set(-160, 60, -120);
+scene.add(rim);
+
+// binary STL -> BufferGeometry, mm units
+function parseSTL(buf) {
+  const dv = new DataView(buf);
+  const n = dv.getUint32(80, true);
+  const pos = new Float32Array(n * 9);
+  for (let i = 0; i < n; i++) {
+    const off = 84 + i * 50 + 12;
+    for (let k = 0; k < 9; k++) pos[i * 9 + k] = dv.getFloat32(off + k * 4, true);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+const CASE_COLOR = 0x2d6a4f;
+const caseMat = new THREE.MeshStandardMaterial({ color: CASE_COLOR, roughness: 0.55, metalness: 0.05 });
+
+// the enclosure is 91 x 71.5 mm; center it on x/y
+const CX = 43.5, CY = 34.25;
+const baseGroup = new THREE.Group();
+const lidGroup = new THREE.Group();
+scene.add(baseGroup, lidGroup);
+
+// internals on the base floor (z = 2 mm)
+// display module: PCB + glowing red 4-digit readout
+const pcbMat = new THREE.MeshStandardMaterial({ color: 0x0f4a2b, roughness: 0.6 });
+const pcb = new THREE.Mesh(new THREE.BoxGeometry(40, 22, 1.6), pcbMat);
+pcb.position.set(CX - 6, CY + 2, 2 + 0.8);
+baseGroup.add(pcb);
+
+function digitsTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#120404';
+  g.fillRect(0, 0, 512, 256);
+  g.fillStyle = '#e0352b';
+  g.font = 'bold 190px ui-monospace, DejaVu Sans Mono, monospace';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(224,53,43,0.9)';
+  g.shadowBlur = 24;
+  g.fillText('07:30', 256, 134);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const displayMat = new THREE.MeshStandardMaterial({ map: digitsTexture(), emissive: 0xe0352b, emissiveMap: null, emissiveIntensity: 0.6, roughness: 0.3 });
+const display = new THREE.Mesh(new THREE.BoxGeometry(34, 14, 0.6), displayMat);
+display.position.set(CX - 6, CY + 2, 2 + 1.6 + 0.3);
+baseGroup.add(display);
+
+// buzzer: black cylinder, 12 mm across, 8 mm tall
+const buzzerMat = new THREE.MeshStandardMaterial({ color: 0x1d1d1d, roughness: 0.4 });
+const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 8, 40), buzzerMat);
+buzzer.rotation.x = Math.PI / 2;
+buzzer.position.set(CX + 22, CY - 14, 2 + 4);
+baseGroup.add(buzzer);
+
+const dome = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.8, 40), new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.2 }));
+dome.rotation.x = Math.PI / 2;
+dome.position.set(CX + 22, CY - 14, 2 + 8.4);
+baseGroup.add(dome);
+
+// load STLs (served from the same folder)
+const loader = (url) => fetch(url).then(r => r.arrayBuffer()).then(parseSTL);
+let ready = Promise.all([loader('base.stl'), loader('lid.stl')]).then(([gb, gl]) => {
+  const base = new THREE.Mesh(gb, caseMat);
+  const lid = new THREE.Mesh(gl, caseMat);
+  base.position.set(-CX, -CY, 0);
+  lid.position.set(-CX, -CY, 0);
+  baseGroup.position.set(0, 0, 0);
+  baseGroup.add(base);
+  lidGroup.add(lid);
+  // internals sit inside the base; they are authored in the enclosure's own frame
+  // (with CX/CY already applied), so shift them to match the centered mesh
+  baseGroup.children.forEach(c => { if (c !== base) c.position.x -= CX, c.position.y -= CY; });
+  // the shared footprint offset: display/buzzer were placed around CX/CY above
+  return true;
+});
+
+// seat the lid on the wall ring at z = 12.6 mm, lifted 38 mm before it drops
+const WALL_TOP = 12.6;
+const LIFT = 38;
+const ease = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+window.setFrame = function (t) {
+  // t in [0, 1]
+  let lidZ;
+  if (t < 0.12) lidZ = WALL_TOP + LIFT;
+  else if (t < 0.55) lidZ = WALL_TOP + LIFT * (1 - ease((t - 0.12) / 0.43));
+  else lidZ = WALL_TOP;
+  lidGroup.position.z = lidZ;
+
+  const theta = 0.7 + t * 1.6;
+  const dist = 340;
+  const height = 150;
+  camera.position.set(Math.cos(theta) * dist, height - t * 20, Math.sin(theta) * dist);
+  camera.lookAt(0, -26, 0);
+  renderer.render(scene, camera);
+  return true;
+};
+
+window.ready = ready.then(() => { window.setFrame(0); return true; });
+</script>
+</body>
+</html>

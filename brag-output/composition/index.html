@@ -25,10 +25,7 @@
       .colon { display: inline-block; }
       .line { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; opacity: 0; }
       .sub { font-size: 44px; font-weight: 400; opacity: 0; margin-top: 28px; color: #c9c5b8; }
-      .board {
-        position: absolute; left: 510px; top: 60px; width: 900px; height: 552px;
-        border: 3px solid #0f4a2b; border-radius: 10px; object-fit: contain;
-      }
+      .case { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
       .pads { display: flex; gap: 48px; }
       .pad {
         width: 220px; height: 220px; border-radius: 28px;
@@ -57,9 +54,9 @@
         <div class="line" id="hook" style="margin-top: 40px; font-size: 52px; color: #c9c5b8;">wakes user up with a memory game</div>
       </div>
 
-      <!-- scene 2: the board 3-7s -->
+      <!-- scene 2: the case 3-7s -->
+      <video class="case" id="case" src="assets/case.mp4" muted playsinline data-start="3" data-duration="4" data-track-index="4"></video>
       <div id="s2" class="clip" data-start="3" data-duration="4" data-track-index="1">
-        <img class="board" id="board" src="assets/board.png" alt="" />
         <div class="line" id="b1" style="position:absolute; left:0; right:0; top:700px; text-align:center;">An alarm clock on a Pico W.</div>
         <div class="sub" id="b2" style="position:absolute; left:0; right:0; top:800px; text-align:center;">Four buttons. Four LEDs. One buzzer.</div>
       </div>
@@ -116,7 +113,6 @@
       tl.to("#hook", { opacity: 1, duration: 0.5 }, 1.0);
 
       // scene 2: the board
-      tl.fromTo("#board", { scale: 1.08, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.0, ease: "power2.out" }, 3.0);
       tl.to("#b1", { opacity: 1, duration: 0.4 }, 3.5);
       tl.to("#b2", { opacity: 1, duration: 0.4 }, 5.0);
 
