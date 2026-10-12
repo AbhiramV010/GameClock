@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #0a0c0b;
+      }
+      #root {
+        position: relative; width: 1920px; height: 1080px;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: #f4f1e8; background: #0a0c0b;
+      }
+      .clip { position: absolute; inset: 0; }
+      .center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .digits {
+        font-family: ui-monospace, "DejaVu Sans Mono", monospace;
+        font-weight: 700; font-size: 240px; letter-spacing: 0.08em;
+        color: #e0352b; text-shadow: 0 0 40px rgba(224, 53, 43, 0.55);
+      }
+      .colon { display: inline-block; }
+      .line { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; opacity: 0; }
+      .sub { font-size: 44px; font-weight: 400; opacity: 0; margin-top: 28px; color: #c9c5b8; }
+      .board {
+        position: absolute; left: 510px; top: 60px; width: 900px; height: 552px;
+        border: 3px solid #0f4a2b; border-radius: 10px; object-fit: contain;
+      }
+      .pads { display: flex; gap: 48px; }
+      .pad {
+        width: 220px; height: 220px; border-radius: 28px;
+        background: #22272a; border: 3px solid #323a3d;
+      }
+      .padlabel { width: 220px; text-align: center; font-size: 30px; color: #8a8f88; margin-top: 18px; }
+      .cursor {
+        position: absolute; width: 36px; height: 36px; border-radius: 50%;
+        border: 4px solid #f4f1e8; background: rgba(244, 241, 232, 0.2);
+        left: 0; top: 0; opacity: 0;
+      }
+      .markers { display: flex; gap: 56px; }
+      .marker {
+        width: 170px; height: 170px; border-radius: 50%;
+        border: 6px solid #3a403d; background: #171b19;
+      }
+      .outro-line { font-size: 72px; font-weight: 600; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="22" data-width="1920" data-height="1080">
+
+      <!-- scene 1: hook 0-3s -->
+      <div id="s1" class="clip center" data-start="0" data-duration="3" data-track-index="1">
+        <div class="digits"><span>07</span><span class="colon">:</span><span>30</span></div>
+        <div class="line" id="hook" style="margin-top: 40px; font-size: 52px; color: #c9c5b8;">wakes user up with a memory game</div>
+      </div>
+
+      <!-- scene 2: the board 3-7s -->
+      <div id="s2" class="clip" data-start="3" data-duration="4" data-track-index="1">
+        <img class="board" id="board" src="assets/board.png" alt="" />
+        <div class="line" id="b1" style="position:absolute; left:0; right:0; top:700px; text-align:center;">An alarm clock on a Pico W.</div>
+        <div class="sub" id="b2" style="position:absolute; left:0; right:0; top:800px; text-align:center;">Four buttons. Four LEDs. One buzzer.</div>
+      </div>
+
+      <!-- scene 3: the game 7-14s -->
+      <div id="s3" class="clip center" data-start="7" data-duration="7" data-track-index="1">
+        <div class="pads" id="pads">
+          <div><div class="pad" id="p0"></div><div class="padlabel">330 Hz</div></div>
+          <div><div class="pad" id="p1"></div><div class="padlabel">392 Hz</div></div>
+          <div><div class="pad" id="p2"></div><div class="padlabel">494 Hz</div></div>
+          <div><div class="pad" id="p3"></div><div class="padlabel">587 Hz</div></div>
+        </div>
+        <div class="line" id="rep" style="margin-top: 110px; font-size: 56px;">Repeat the pattern.</div>
+        <div class="cursor" id="cursor"></div>
+      </div>
+
+      <!-- scene 4: the count 14-18s -->
+      <div id="s4" class="clip center" data-start="14" data-duration="4" data-track-index="1">
+        <div class="markers" id="markers">
+          <div class="marker" id="m0"></div>
+          <div class="marker" id="m1"></div>
+          <div class="marker" id="m2"></div>
+          <div class="marker" id="m3"></div>
+          <div class="marker" id="m4"></div>
+        </div>
+        <div class="line" id="rounds" style="margin-top: 110px; font-size: 56px;">Five rounds in a row to shut it up.</div>
+      </div>
+
+      <!-- scene 5: punchline 18-22s -->
+      <div id="s5" class="clip center" data-start="18" data-duration="4" data-track-index="1">
+        <div class="digits" id="time2"><span>07</span><span class="colon">:</span><span>31</span></div>
+        <div class="outro-line" id="edit" style="margin-top: 60px;">Edit these and reflash.</div>
+      </div>
+
+      <audio id="music" src="assets/music.mp3" data-start="0" data-duration="22" data-track-index="2" data-volume="1"></audio>
+      <audio id="sfx-press1" src="assets/switch_001.ogg" data-start="7.4" data-duration="0.62" data-track-index="3" data-volume="0.8"></audio>
+      <audio id="sfx-press2" src="assets/switch_001.ogg" data-start="11.4" data-duration="0.62" data-track-index="4" data-volume="0.8"></audio>
+      <audio id="sfx-press3" src="assets/switch_001.ogg" data-start="11.9" data-duration="0.62" data-track-index="5" data-volume="0.8"></audio>
+      <audio id="sfx-press4" src="assets/switch_001.ogg" data-start="12.4" data-duration="0.62" data-track-index="6" data-volume="0.8"></audio>
+      <audio id="sfx-m0" src="assets/click_001.ogg" data-start="14.6" data-duration="0.1" data-track-index="7" data-volume="0.9"></audio>
+      <audio id="sfx-m1" src="assets/click_001.ogg" data-start="15.2" data-duration="0.1" data-track-index="8" data-volume="0.9"></audio>
+      <audio id="sfx-m2" src="assets/click_001.ogg" data-start="15.6" data-duration="0.1" data-track-index="9" data-volume="0.9"></audio>
+      <audio id="sfx-m3" src="assets/click_001.ogg" data-start="16.02" data-duration="0.1" data-track-index="10" data-volume="0.9"></audio>
+      <audio id="sfx-m4" src="assets/click_001.ogg" data-start="17.0" data-duration="0.1" data-track-index="11" data-volume="0.9"></audio>
+      <audio id="sfx-bong" src="assets/impactBell_heavy_000.ogg" data-start="18" data-duration="1.48" data-track-index="12" data-volume="0.7"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // scene 1: hook
+      tl.fromTo("#s1 .digits", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0);
+      tl.to("#s1 .colon", { opacity: 0.1, duration: 0.4, repeat: 4, yoyo: true, ease: "steps(1)" }, 0.5);
+      tl.to("#hook", { opacity: 1, duration: 0.5 }, 1.0);
+
+      // scene 2: the board
+      tl.fromTo("#board", { scale: 1.08, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.0, ease: "power2.out" }, 3.0);
+      tl.to("#b1", { opacity: 1, duration: 0.4 }, 3.5);
+      tl.to("#b2", { opacity: 1, duration: 0.4 }, 5.0);
+
+      // scene 3: the game
+      const padPos = [0, 1, 2, 3].map(i => document.getElementById("p" + i));
+      // alarm chirp: all four flash twice
+      [7.2, 7.7].forEach(t => {
+        padPos.forEach(p => tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.12, yoyo: true, repeat: 1 }, t));
+      });
+      tl.to("#rep", { opacity: 1, duration: 0.4 }, 8.0);
+      // sequence: pad 2, pad 4, pad 1
+      [[9.0, 2], [9.8, 4], [10.6, 1]].forEach(([t, n]) => {
+        const p = padPos[n - 1];
+        tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.35, yoyo: true, repeat: 1 }, t);
+      });
+      // cursor simulates three presses in order
+      const cursorPos = [[11.4, 2], [11.9, 4], [12.4, 1]];
+      tl.set("#cursor", { opacity: 1 }, 11.2);
+      // pad centers from the flex layout: 4 x 220px pads, 48px gaps, centered in 1920x1080
+      const padCenters = [558, 826, 1094, 1362];
+      const padCenterY = 426;
+      cursorPos.forEach(([t, n]) => {
+        const p = padPos[n - 1];
+        tl.set("#cursor", { left: padCenters[n - 1] - 18, top: padCenterY - 18 }, t - 0.4);
+        tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.25, yoyo: true, repeat: 1 }, t);
+      });
+      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 13.2);
+
+      // scene 4: the count
+      tl.to("#rounds", { opacity: 1, duration: 0.4 }, 14.2);
+      [14.6, 15.2, 15.6, 16.02, 17.0].forEach((t, i) => {
+        tl.to("#m" + i, { backgroundColor: "#e0352b", borderColor: "#e0352b", boxShadow: "0 0 50px rgba(224,53,43,0.7)", duration: 0.2 }, t);
+      });
+
+      // scene 5: punchline
+      tl.set("#s5 .digits span:last-child", { textContent: "31" }, 18.0);
+      tl.to("#edit", { opacity: 1, duration: 0.4 }, 18.4);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
