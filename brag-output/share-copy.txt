@@ -1,1 +1,1 @@
-I built an alarm clock that makes you repeat a memory game five rounds in a row before it shuts up. Pico W, four buttons, four LEDs, one buzzer. Edit these and reflash.
+07:30. Your alarm goes off, and there's no snooze. Just a memory game that won't stop until you beat it five rounds in a row. GameClock: an alarm clock on a Pico W.

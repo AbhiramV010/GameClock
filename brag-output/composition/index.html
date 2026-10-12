@@ -6,150 +6,253 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body {
-        width: 1920px; height: 1080px; overflow: hidden;
-        background: #0a0c0b;
-      }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #050606; }
       #root {
-        position: relative; width: 1920px; height: 1080px;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        color: #f4f1e8; background: #0a0c0b;
+        position: relative; width: 1920px; height: 1080px; overflow: hidden;
+        font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+        color: #f4f1e8; background: #050606;
       }
       .clip { position: absolute; inset: 0; }
       .center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .bar { position: absolute; left: 0; right: auto; bottom: auto; width: 1920px; height: 138px; background: #000; z-index: 50; }
+      .bar.top { top: 0; } .bar.bottom { top: 942px; }
+      .vignette {
+        position: absolute; inset: 0; z-index: 40; pointer-events: none;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.65) 100%);
+      }
+      .flash { position: absolute; inset: 0; z-index: 30; background: #e0352b; opacity: 0; mix-blend-mode: screen; }
+      .black { position: absolute; inset: 0; z-index: 45; background: #000; opacity: 0; }
       .digits {
-        font-family: ui-monospace, "DejaVu Sans Mono", monospace;
-        font-weight: 700; font-size: 240px; letter-spacing: 0.08em;
-        color: #e0352b; text-shadow: 0 0 40px rgba(224, 53, 43, 0.55);
+        font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-weight: 700;
+        font-size: 300px; letter-spacing: 0.06em; line-height: 1;
       }
-      .colon { display: inline-block; }
-      .line { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; opacity: 0; }
-      .sub { font-size: 44px; font-weight: 400; opacity: 0; margin-top: 28px; color: #c9c5b8; }
+      .dim { color: #cc3b2e; text-shadow: 0 0 24px rgba(224,53,43,0.2); }
+      .hot { color: #ff3b2e; text-shadow: 0 0 60px rgba(255,59,46,0.8), 0 0 140px rgba(255,59,46,0.45); }
+      .whisper { font-size: 44px; font-weight: 400; color: #9a9f98; margin-top: 36px; opacity: 0; letter-spacing: 0.02em; }
+      .slam { font-size: 120px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+      .red { color: #ff3b2e; }
+      .lower { position: absolute; left: 150px; font-size: 64px; font-weight: 800; letter-spacing: -0.03em; opacity: 0; }
       .case { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
-      .pads { display: flex; gap: 48px; }
+      /* game */
+      .hud {
+        position: absolute; left: 150px; top: 172px; font-family: ui-monospace, "DejaVu Sans Mono", monospace;
+        font-size: 34px; letter-spacing: 0.2em; color: #b4b8b0; opacity: 0;
+      }
+      .hud b { color: #ff3b2e; font-weight: 700; }
+      .cue { position: absolute; left: 0; right: 0; top: 196px; text-align: center; font-size: 96px; font-weight: 800; letter-spacing: -0.03em; opacity: 0; }
+      .cue.sub { top: 300px; font-size: 56px; font-weight: 600; color: #f4f1e8; }
+      .stage { position: absolute; left: 0; right: 0; top: 430px; height: 480px; perspective: 1400px; display: flex; justify-content: center; }
+      .plane { display: flex; gap: 50px; transform: rotateX(42deg); transform-origin: 50% 60%; }
+      .padwrap { display: flex; flex-direction: column; align-items: center; }
       .pad {
-        width: 220px; height: 220px; border-radius: 28px;
-        background: #22272a; border: 3px solid #323a3d;
+        position: relative; width: 230px; height: 230px; border-radius: 30px;
+        background: #1a1f1d; border: 3px solid #2c3431; overflow: hidden;
       }
-      .padlabel { width: 220px; text-align: center; font-size: 30px; color: #8a8f88; margin-top: 18px; }
-      .cursor {
-        position: absolute; width: 36px; height: 36px; border-radius: 50%;
-        border: 4px solid #f4f1e8; background: rgba(244, 241, 232, 0.2);
-        left: 0; top: 0; opacity: 0;
+      .ripple {
+        position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px;
+        border-radius: 50%; border: 10px solid #f4f1e8; opacity: 0;
       }
-      .markers { display: flex; gap: 56px; }
-      .marker {
-        width: 170px; height: 170px; border-radius: 50%;
-        border: 6px solid #3a403d; background: #171b19;
-      }
-      .outro-line { font-size: 72px; font-weight: 600; opacity: 0; }
+      .hz { position: absolute; z-index: 2; top: 700px; width: 160px; text-align: center; font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-size: 30px; color: #9a9f98; }
+      .nums { display: flex; gap: 70px; margin-top: 60px; }
+      .num { font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-weight: 700; font-size: 220px; color: #ff3b2e; opacity: 0;
+        text-shadow: 0 0 50px rgba(255,59,46,0.7); }
+      .title { font-size: 180px; font-weight: 800; letter-spacing: -0.045em; opacity: 0; }
+      .tag { font-size: 52px; font-weight: 500; color: #c9c5b8; margin-top: 24px; opacity: 0; }
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="22" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="23" data-width="1920" data-height="1080">
 
-      <!-- scene 1: hook 0-3s -->
-      <div id="s1" class="clip center" data-start="0" data-duration="3" data-track-index="1">
-        <div class="digits"><span>07</span><span class="colon">:</span><span>30</span></div>
-        <div class="line" id="hook" style="margin-top: 40px; font-size: 52px; color: #c9c5b8;">wakes user up with a memory game</div>
+      <!-- 0-1.8 you're asleep -->
+      <div id="s1" class="clip center" data-start="0" data-duration="1.8" data-track-index="1">
+        <div class="digits dim" id="d1">07:29</div>
+        <div class="whisper" id="asleep">You're asleep.</div>
       </div>
 
-      <!-- scene 2: the case 3-7s -->
-      <video class="case" id="case" src="assets/case.mp4" muted playsinline data-start="3" data-duration="4" data-track-index="4"></video>
-      <div id="s2" class="clip" data-start="3" data-duration="4" data-track-index="1">
-        <div class="line" id="b1" style="position:absolute; left:0; right:0; top:700px; text-align:center;">An alarm clock on a Pico W.</div>
-        <div class="sub" id="b2" style="position:absolute; left:0; right:0; top:800px; text-align:center;">Four buttons. Four LEDs. One buzzer.</div>
+      <!-- 1.8-3.0 the alarm -->
+      <div id="s2" class="clip center" data-start="1.8" data-duration="1.2" data-track-index="1">
+        <div class="digits hot" id="d2">07:30</div>
       </div>
 
-      <!-- scene 3: the game 7-14s -->
-      <div id="s3" class="clip center" data-start="7" data-duration="7" data-track-index="1">
-        <div class="pads" id="pads">
-          <div><div class="pad" id="p0"></div><div class="padlabel">330 Hz</div></div>
-          <div><div class="pad" id="p1"></div><div class="padlabel">392 Hz</div></div>
-          <div><div class="pad" id="p2"></div><div class="padlabel">494 Hz</div></div>
-          <div><div class="pad" id="p3"></div><div class="padlabel">587 Hz</div></div>
+      <!-- 3.0-3.9 / 3.9-4.8 snooze -->
+      <div id="s3a" class="clip center" data-start="3.0" data-duration="0.9" data-track-index="1">
+        <div class="slam" id="snooze">Reach for snooze.</div>
+      </div>
+      <div id="s3b" class="clip center" data-start="3.9" data-duration="0.9" data-track-index="1">
+        <div class="slam red" id="none">There isn't one.</div>
+      </div>
+
+      <!-- 4.8-9.1 the case; lid lands on the 5.1s drop -->
+      <video class="case" id="case" src="assets/case.mp4" muted playsinline data-start="4.8" data-duration="4.3" data-track-index="2"></video>
+      <div id="s4" class="clip" data-start="4.8" data-duration="4.3" data-track-index="1">
+        <div class="lower" id="meet" style="top: 800px;">Meet GameClock.</div>
+        <div class="lower" id="wakes" style="top: 800px;">It wakes you up with a <span class="red">memory game.</span></div>
+      </div>
+
+      <!-- 9.1-16.1 you play -->
+      <div id="game" class="clip" data-start="9.1" data-duration="7.0" data-track-index="1">
+        <div class="hud" id="hud3">ROUND <b>3</b> / 5</div>
+        <div class="hud" id="hud4">ROUND <b>4</b> / 5</div>
+        <div class="hud" id="hud1">ROUND <b>1</b> / 5</div>
+        <div class="cue" id="watch">Watch.</div>
+        <div class="cue" id="turn">Your turn.</div>
+        <div class="cue red" id="wrong">Wrong.</div>
+        <div class="cue sub" id="back">Back to round 1.</div>
+        <div class="stage" id="stage">
+          <div class="plane" id="plane">
+            <div class="padwrap"><div class="pad" id="p1"><div class="ripple" id="r1"></div></div></div>
+            <div class="padwrap"><div class="pad" id="p2"><div class="ripple" id="r2"></div></div></div>
+            <div class="padwrap"><div class="pad" id="p3"><div class="ripple" id="r3"></div></div></div>
+            <div class="padwrap"><div class="pad" id="p4"><div class="ripple" id="r4"></div></div></div>
+          </div>
         </div>
-        <div class="line" id="rep" style="margin-top: 110px; font-size: 56px;">Repeat the pattern.</div>
-        <div class="cursor" id="cursor"></div>
+        <div class="hz" style="left: 488px;">330 Hz</div>
+        <div class="hz" style="left: 746px;">392 Hz</div>
+        <div class="hz" style="left: 1014px;">494 Hz</div>
+        <div class="hz" style="left: 1273px;">587 Hz</div>
       </div>
 
-      <!-- scene 4: the count 14-18s -->
-      <div id="s4" class="clip center" data-start="14" data-duration="4" data-track-index="1">
-        <div class="markers" id="markers">
-          <div class="marker" id="m0"></div>
-          <div class="marker" id="m1"></div>
-          <div class="marker" id="m2"></div>
-          <div class="marker" id="m3"></div>
-          <div class="marker" id="m4"></div>
+      <!-- 16.1-18.6 five in a row -->
+      <div id="s7" class="clip center" data-start="16.1" data-duration="2.5" data-track-index="1">
+        <div class="slam" id="five" style="font-size: 88px;">Five rounds in a row.</div>
+        <div class="nums">
+          <div class="num" id="n1">1</div><div class="num" id="n2">2</div><div class="num" id="n3">3</div><div class="num" id="n4">4</div><div class="num" id="n5">5</div>
         </div>
-        <div class="line" id="rounds" style="margin-top: 110px; font-size: 56px;">Five rounds in a row to shut it up.</div>
       </div>
 
-      <!-- scene 5: punchline 18-22s -->
-      <div id="s5" class="clip center" data-start="18" data-duration="4" data-track-index="1">
-        <div class="digits" id="time2"><span>07</span><span class="colon">:</span><span>31</span></div>
-        <div class="outro-line" id="edit" style="margin-top: 60px;">Edit these and reflash.</div>
+      <!-- 18.6-20.4 silence -->
+      <div id="s8" class="clip center" data-start="18.6" data-duration="1.8" data-track-index="1">
+        <div class="digits hot" id="d3" style="font-size: 200px;">07:34</div>
+        <div class="whisper" id="awake" style="color: #f4f1e8; font-size: 56px; font-weight: 600;">Now you're awake.</div>
       </div>
 
-      <audio id="music" src="assets/music.mp3" data-start="0" data-duration="22" data-track-index="2" data-volume="1"></audio>
-      <audio id="sfx-press1" src="assets/switch_001.ogg" data-start="7.4" data-duration="0.62" data-track-index="3" data-volume="0.8"></audio>
-      <audio id="sfx-press2" src="assets/switch_001.ogg" data-start="11.4" data-duration="0.62" data-track-index="4" data-volume="0.8"></audio>
-      <audio id="sfx-press3" src="assets/switch_001.ogg" data-start="11.9" data-duration="0.62" data-track-index="5" data-volume="0.8"></audio>
-      <audio id="sfx-press4" src="assets/switch_001.ogg" data-start="12.4" data-duration="0.62" data-track-index="6" data-volume="0.8"></audio>
-      <audio id="sfx-m0" src="assets/click_001.ogg" data-start="14.6" data-duration="0.1" data-track-index="7" data-volume="0.9"></audio>
-      <audio id="sfx-m1" src="assets/click_001.ogg" data-start="15.2" data-duration="0.1" data-track-index="8" data-volume="0.9"></audio>
-      <audio id="sfx-m2" src="assets/click_001.ogg" data-start="15.6" data-duration="0.1" data-track-index="9" data-volume="0.9"></audio>
-      <audio id="sfx-m3" src="assets/click_001.ogg" data-start="16.02" data-duration="0.1" data-track-index="10" data-volume="0.9"></audio>
-      <audio id="sfx-m4" src="assets/click_001.ogg" data-start="17.0" data-duration="0.1" data-track-index="11" data-volume="0.9"></audio>
-      <audio id="sfx-bong" src="assets/impactBell_heavy_000.ogg" data-start="18" data-duration="1.48" data-track-index="12" data-volume="0.7"></audio>
+      <!-- 20.4-23 end card -->
+      <div id="s9" class="clip center" data-start="20.4" data-duration="2.6" data-track-index="1">
+        <div class="title" id="title">GameClock</div>
+        <div class="tag" id="tag">An alarm clock on a Pico W.</div>
+      </div>
+
+      <div class="clip flash" id="flash" data-start="0" data-duration="23" data-track-index="3"></div>
+      <div class="clip black" id="black" data-start="0" data-duration="23" data-track-index="4"></div>
+      <div class="clip bar top" id="bartop" data-start="0" data-duration="23" data-track-index="6"></div>
+      <div class="clip bar bottom" id="barbot" data-start="0" data-duration="23" data-track-index="7"></div>
+
+      <audio id="a-chirp" src="assets/chirp.wav" data-start="1.8" data-duration="0.45" data-track-index="10" data-volume="1.0"></audio>
+      <audio id="a-music" src="assets/music_cut.mp3" data-start="3.0" data-duration="15.6" data-track-index="11" data-volume="1.0"></audio>
+      <audio id="a-slam" src="assets/impactSoft_medium_000.ogg" data-start="5.1" data-duration="0.118" data-track-index="12" data-volume="1.0"></audio>
+      <audio id="a-seq1" src="assets/tone_392.wav" data-start="9.6" data-duration="0.32" data-track-index="13" data-volume="0.9"></audio>
+      <audio id="a-seq2" src="assets/tone_587.wav" data-start="10.1" data-duration="0.32" data-track-index="14" data-volume="0.9"></audio>
+      <audio id="a-seq3" src="assets/tone_330.wav" data-start="10.6" data-duration="0.32" data-track-index="15" data-volume="0.9"></audio>
+      <audio id="a-prs1" src="assets/tone_392.wav" data-start="11.6" data-duration="0.32" data-track-index="16" data-volume="0.9"></audio>
+      <audio id="a-tap1" src="assets/click3.ogg" data-start="11.6" data-duration="0.086" data-track-index="17" data-volume="1.0"></audio>
+      <audio id="a-prs2" src="assets/tone_587.wav" data-start="12.1" data-duration="0.32" data-track-index="18" data-volume="0.9"></audio>
+      <audio id="a-tap2" src="assets/click3.ogg" data-start="12.1" data-duration="0.086" data-track-index="19" data-volume="1.0"></audio>
+      <audio id="a-prs3" src="assets/tone_330.wav" data-start="12.6" data-duration="0.32" data-track-index="20" data-volume="0.9"></audio>
+      <audio id="a-tap3" src="assets/click3.ogg" data-start="12.6" data-duration="0.086" data-track-index="21" data-volume="1.0"></audio>
+      <audio id="a-r4a" src="assets/tone_494.wav" data-start="13.6" data-duration="0.32" data-track-index="22" data-volume="0.9"></audio>
+      <audio id="a-r4b" src="assets/tone_330.wav" data-start="13.85" data-duration="0.32" data-track-index="23" data-volume="0.9"></audio>
+      <audio id="a-r4c" src="assets/tone_587.wav" data-start="14.1" data-duration="0.32" data-track-index="24" data-volume="0.9"></audio>
+      <audio id="a-r4d" src="assets/tone_392.wav" data-start="14.35" data-duration="0.32" data-track-index="25" data-volume="0.9"></audio>
+      <audio id="a-wtone" src="assets/tone_330.wav" data-start="14.6" data-duration="0.32" data-track-index="26" data-volume="0.9"></audio>
+      <audio id="a-wtap" src="assets/click3.ogg" data-start="14.6" data-duration="0.086" data-track-index="27" data-volume="1.0"></audio>
+      <audio id="a-werr" src="assets/error_005.ogg" data-start="14.6" data-duration="0.5" data-track-index="28" data-volume="1.0"></audio>
+      <audio id="a-n1" src="assets/impactGeneric_light_002.ogg" data-start="16.1" data-duration="0.1396" data-track-index="29" data-volume="1.0"></audio>
+      <audio id="a-n2" src="assets/impactGeneric_light_002.ogg" data-start="16.6" data-duration="0.1396" data-track-index="30" data-volume="1.0"></audio>
+      <audio id="a-n3" src="assets/impactGeneric_light_002.ogg" data-start="17.1" data-duration="0.1396" data-track-index="31" data-volume="1.0"></audio>
+      <audio id="a-n4" src="assets/impactGeneric_light_002.ogg" data-start="17.6" data-duration="0.1396" data-track-index="32" data-volume="1.0"></audio>
+      <audio id="a-n5" src="assets/impactGeneric_light_002.ogg" data-start="18.1" data-duration="0.1396" data-track-index="33" data-volume="1.0"></audio>
+      <audio id="a-bell" src="assets/impactBell_heavy_000.ogg" data-start="20.4" data-duration="1.48" data-track-index="34" data-volume="0.8"></audio>
     </div>
 
     <script>
       const tl = gsap.timeline({ paused: true });
+      const RED = "#ff3b2e", PAD = "#1a1f1d";
 
-      // scene 1: hook
-      tl.fromTo("#s1 .digits", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0);
-      tl.to("#s1 .colon", { opacity: 0.1, duration: 0.4, repeat: 4, yoyo: true, ease: "steps(1)" }, 0.5);
-      tl.to("#hook", { opacity: 1, duration: 0.5 }, 1.0);
+      function shake(sel, t, amp) {
+        [amp, -amp * 0.8, amp * 0.6, -amp * 0.4, amp * 0.2, 0].forEach((x, i) => {
+          tl.to(sel, { x: x, duration: 0.035, ease: "none", overwrite: "auto" }, t + i * 0.035);
+        });
+      }
+      function flash(t, peak, hold) {
+        tl.set("#flash", { opacity: peak }, t);
+        tl.to("#flash", { opacity: 0, duration: hold, ease: "power2.out" }, t + 0.02);
+      }
+      function lightPad(n, t, on) {
+        tl.to("#p" + n, { backgroundColor: RED, boxShadow: "0 0 90px 12px rgba(255,59,46,0.75)", duration: 0.04 }, t);
+        tl.to("#p" + n, { backgroundColor: PAD, boxShadow: "0 0 0px 0px rgba(255,59,46,0)", duration: 0.16 }, t + on);
+      }
+      function press(n, t) {
+        tl.fromTo("#r" + n, { scale: 0.2, opacity: 0.95 }, { scale: 1.9, opacity: 0, duration: 0.42, ease: "power2.out", immediateRender: false }, t);
+        lightPad(n, t, 0.24);
+        tl.fromTo("#stage", { scale: 1.035 }, { scale: 1, duration: 0.25, ease: "power2.out", immediateRender: false }, t);
+      }
+      function show(sel, t, d) { tl.fromTo(sel, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: d || 0.25, ease: "power3.out" }, t); }
+      function hide(sel, t) { tl.to(sel, { opacity: 0, duration: 0.12 }, t); }
+      function slamIn(sel, t) { tl.fromTo(sel, { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.16, ease: "power4.out" }, t); }
 
-      // scene 2: the board
-      tl.to("#b1", { opacity: 1, duration: 0.4 }, 3.5);
-      tl.to("#b2", { opacity: 1, duration: 0.4 }, 5.0);
+      // 0-1.8: asleep, slow push-in
+      tl.fromTo("#d1", { scale: 1 }, { scale: 1.14, duration: 1.8, ease: "none" }, 0);
+      tl.fromTo("#d1", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0);
+      show("#asleep", 0.35, 0.6);
 
-      // scene 3: the game
-      const padPos = [0, 1, 2, 3].map(i => document.getElementById("p" + i));
-      // alarm chirp: all four flash twice
-      [7.2, 7.7].forEach(t => {
-        padPos.forEach(p => tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.12, yoyo: true, repeat: 1 }, t));
-      });
-      tl.to("#rep", { opacity: 1, duration: 0.4 }, 8.0);
-      // sequence: pad 2, pad 4, pad 1
-      [[9.0, 2], [9.8, 4], [10.6, 1]].forEach(([t, n]) => {
-        const p = padPos[n - 1];
-        tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.35, yoyo: true, repeat: 1 }, t);
-      });
-      // cursor simulates three presses in order
-      const cursorPos = [[11.4, 2], [11.9, 4], [12.4, 1]];
-      tl.set("#cursor", { opacity: 1 }, 11.2);
-      // pad centers from the flex layout: 4 x 220px pads, 48px gaps, centered in 1920x1080
-      const padCenters = [558, 826, 1094, 1362];
-      const padCenterY = 426;
-      cursorPos.forEach(([t, n]) => {
-        const p = padPos[n - 1];
-        tl.set("#cursor", { left: padCenters[n - 1] - 18, top: padCenterY - 18 }, t - 0.4);
-        tl.to(p, { backgroundColor: "#e0352b", boxShadow: "0 0 60px rgba(224,53,43,0.8)", duration: 0.25, yoyo: true, repeat: 1 }, t);
-      });
-      tl.to("#cursor", { opacity: 0, duration: 0.3 }, 13.2);
+      // 1.8-3.0: 07:30, the chirp (two 150ms pulses, same as alarmChirp)
+      tl.fromTo("#d2", { scale: 1.2 }, { scale: 1.0, duration: 0.25, ease: "power4.out" }, 1.8);
+      flash(1.8, 0.85, 0.15);
+      flash(2.05, 0.85, 0.15);
+      shake("#d2", 1.8, 26);
+      shake("#d2", 2.05, 20);
 
-      // scene 4: the count
-      tl.to("#rounds", { opacity: 1, duration: 0.4 }, 14.2);
-      [14.6, 15.2, 15.6, 16.02, 17.0].forEach((t, i) => {
-        tl.to("#m" + i, { backgroundColor: "#e0352b", borderColor: "#e0352b", boxShadow: "0 0 50px rgba(224,53,43,0.7)", duration: 0.2 }, t);
-      });
+      // 3.0-4.8: snooze
+      tl.fromTo("#snooze", { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 3.0);
+      slamIn("#none", 3.9);
+      shake("#none", 3.9, 18);
 
-      // scene 5: punchline
-      tl.set("#s5 .digits span:last-child", { textContent: "31" }, 18.0);
-      tl.to("#edit", { opacity: 1, duration: 0.4 }, 18.4);
+      // 4.8-9.1: the case; lid lands at 5.1
+      // beat-locked: 5.10s (preset strongCue 16.02s, track offset 13.92s, music at 3.0s)
+      flash(5.1, 0.35, 0.25);
+      show("#meet", 5.6);
+      hide("#meet", 7.0);
+      show("#wakes", 7.1);
+
+      // 9.1-16.1: you play
+      tl.fromTo("#stage", { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 9.1);
+      show("#hud3", 9.1);
+      show("#watch", 9.1);
+      // beat-grid: sequence at 9.6, 10.1, 10.6
+      lightPad(2, 9.6, 0.3); lightPad(4, 10.1, 0.3); lightPad(1, 10.6, 0.3);
+      hide("#watch", 11.0);
+      show("#turn", 11.1);
+      // beat-grid: presses at 11.6, 12.1, 12.6
+      press(2, 11.6); press(4, 12.1); press(1, 12.6);
+      hide("#turn", 13.0);
+      hide("#hud3", 13.1);
+      show("#hud4", 13.1);
+      [1, 2, 3, 4].forEach(n => lightPad(n, 13.1, 0.12));
+      // round 4 plays on the half-beat: 13.6, 13.85, 14.1, 14.35
+      lightPad(3, 13.6, 0.18); lightPad(1, 13.85, 0.18); lightPad(4, 14.1, 0.18); lightPad(2, 14.35, 0.18);
+      // you press pad 1; it wanted pad 3
+      press(1, 14.6);
+      flash(14.62, 0.7, 0.45);
+      shake("#stage", 14.62, 34);
+      slamIn("#wrong", 14.62);
+      hide("#hud4", 15.0);
+      show("#hud1", 15.0);
+      show("#back", 15.0);
+
+      // 16.1-18.6: five in a row
+      // beat-grid: 16.1, 16.6, 17.1, 17.6, 18.1
+      show("#five", 16.1);
+      [1, 2, 3, 4, 5].forEach((n, i) => slamIn("#n" + n, 16.1 + i * 0.5));
+      flash(18.1, 0.4, 0.3);
+
+      // 18.6-20.4: silence
+      tl.fromTo("#d3", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 18.6);
+      show("#awake", 18.9, 0.5);
+
+      // 20.4-23: end card
+      tl.fromTo("#title", { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 20.4);
+      show("#tag", 20.9, 0.5);
+      tl.to("#black", { opacity: 1, duration: 0.5 }, 22.5);
 
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

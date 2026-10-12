@@ -54,46 +54,67 @@ const baseGroup = new THREE.Group();
 const lidGroup = new THREE.Group();
 scene.add(baseGroup, lidGroup);
 
-// internals on the base floor (z = 2 mm)
-// display module: PCB + glowing red 4-digit readout
+// internals, placed under the lid cutouts (enclosure frame, mm; the lid plate sits at z 12.6-14.6)
+// display module behind the 44 x 16 mm window centered at (42, 20)
 const pcbMat = new THREE.MeshStandardMaterial({ color: 0x0f4a2b, roughness: 0.6 });
-const pcb = new THREE.Mesh(new THREE.BoxGeometry(40, 22, 1.6), pcbMat);
-pcb.position.set(CX - 6, CY + 2, 2 + 0.8);
+const pcb = new THREE.Mesh(new THREE.BoxGeometry(50, 24, 1.6), pcbMat);
+pcb.position.set(42, 20, 10);
 baseGroup.add(pcb);
 
 function digitsTexture() {
   const c = document.createElement('canvas');
-  c.width = 512; c.height = 256;
+  c.width = 1024; c.height = 352;
   const g = c.getContext('2d');
   g.fillStyle = '#120404';
-  g.fillRect(0, 0, 512, 256);
-  g.fillStyle = '#e0352b';
-  g.font = 'bold 190px ui-monospace, DejaVu Sans Mono, monospace';
+  g.fillRect(0, 0, 1024, 352);
+  g.fillStyle = '#ff3b2e';
+  g.font = 'bold 300px ui-monospace, DejaVu Sans Mono, monospace';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.shadowColor = 'rgba(224,53,43,0.9)';
-  g.shadowBlur = 24;
-  g.fillText('07:30', 256, 134);
+  g.shadowColor = 'rgba(255,59,46,0.9)';
+  g.shadowBlur = 30;
+  g.fillText('07:30', 512, 186);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-const displayMat = new THREE.MeshStandardMaterial({ map: digitsTexture(), emissive: 0xe0352b, emissiveMap: null, emissiveIntensity: 0.6, roughness: 0.3 });
-const display = new THREE.Mesh(new THREE.BoxGeometry(34, 14, 0.6), displayMat);
-display.position.set(CX - 6, CY + 2, 2 + 1.6 + 0.3);
+const digitsMap = digitsTexture();
+const displayMat = new THREE.MeshStandardMaterial({ map: digitsMap, emissive: 0xffffff, emissiveMap: digitsMap, emissiveIntensity: 0.9, roughness: 0.25 });
+const display = new THREE.Mesh(new THREE.BoxGeometry(42, 14.5, 3.6), displayMat);
+display.position.set(42, 20, 10.8 + 1.8);
 baseGroup.add(display);
 
-// buzzer: black cylinder, 12 mm across, 8 mm tall
+// buzzer under the vent grille at (16, 56)
 const buzzerMat = new THREE.MeshStandardMaterial({ color: 0x1d1d1d, roughness: 0.4 });
-const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 8, 40), buzzerMat);
+const buzzer = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 10, 40), buzzerMat);
 buzzer.rotation.x = Math.PI / 2;
-buzzer.position.set(CX + 22, CY - 14, 2 + 4);
+buzzer.position.set(16, 55.7, 2 + 5);
 baseGroup.add(buzzer);
+const buzzerTop = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.8, 40), new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.2 }));
+buzzerTop.rotation.x = Math.PI / 2;
+buzzerTop.position.set(16, 55.7, 12.4);
+baseGroup.add(buzzerTop);
 
-const dome = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.8, 40), new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.2 }));
-dome.rotation.x = Math.PI / 2;
-dome.position.set(CX + 22, CY - 14, 2 + 8.4);
-baseGroup.add(dome);
+// four button caps through the 7 mm holes at y = 54
+const capMat = new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.5 });
+[37.2, 48.8, 59.2, 69.8].forEach((x) => {
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 7, 32), capMat);
+  cap.rotation.x = Math.PI / 2;
+  cap.position.set(x, 54.2, 12.5);
+  baseGroup.add(cap);
+});
+
+// four red LEDs through the 4.5 mm holes at y = 5
+const ledMat = new THREE.MeshStandardMaterial({ color: 0xe0352b, emissive: 0xe0352b, emissiveIntensity: 0.8, roughness: 0.2 });
+[45.0, 52.5, 59.5, 66.5].forEach((x) => {
+  const led = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 6, 24), ledMat);
+  led.rotation.x = Math.PI / 2;
+  led.position.set(x, 5.3, 12.2);
+  baseGroup.add(led);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 12), ledMat);
+  dome.position.set(x, 5.3, 15.2);
+  baseGroup.add(dome);
+});
 
 // load STLs (served from the same folder)
 const loader = (url) => fetch(url).then(r => r.arrayBuffer()).then(parseSTL);
@@ -112,24 +133,30 @@ let ready = Promise.all([loader('base.stl'), loader('lid.stl')]).then(([gb, gl])
   return true;
 });
 
-// seat the lid on the wall ring at z = 12.6 mm, lifted 38 mm before it drops
+// seat the lid on the wall ring at z = 12.6 mm
+// the shot runs 4.3s; the lid hits the base at 0.3s (beat-locked to 4.6s in the edit)
 const WALL_TOP = 12.6;
-const LIFT = 38;
-const ease = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const DUR = 4.3;
+const IMPACT = 0.3;
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
 
 window.setFrame = function (t) {
-  // t in [0, 1]
+  const tau = t * DUR;
   let lidZ;
-  if (t < 0.12) lidZ = WALL_TOP + LIFT;
-  else if (t < 0.55) lidZ = WALL_TOP + LIFT * (1 - ease((t - 0.12) / 0.43));
+  if (tau < IMPACT) lidZ = WALL_TOP + 70 * (1 - Math.pow(tau / IMPACT, 2));
+  else if (tau < IMPACT + 0.14) lidZ = WALL_TOP + 1.8 * Math.sin(Math.PI * (tau - IMPACT) / 0.14);
   else lidZ = WALL_TOP;
   lidGroup.position.z = lidZ;
 
-  const theta = 0.7 + t * 1.6;
-  const dist = 340;
-  const height = 150;
-  camera.position.set(Math.cos(theta) * dist, height - t * 20, Math.sin(theta) * dist);
-  camera.lookAt(0, -26, 0);
+  // low push-in orbit
+  const k = easeOut(Math.min(1, tau / DUR));
+  const theta = 1.0 + k * 0.55;
+  const dist = 300 - k * 70;
+  const height = 120 - k * 50;
+  let shake = 0;
+  if (tau > IMPACT) shake = 5 * Math.sin((tau - IMPACT) * 70) * Math.exp(-(tau - IMPACT) * 10);
+  camera.position.set(Math.cos(theta) * dist + shake, height + shake * 0.6, Math.sin(theta) * dist);
+  camera.lookAt(0, -6, 0);
   renderer.render(scene, camera);
   return true;
 };
