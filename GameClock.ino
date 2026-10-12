@@ -13,26 +13,23 @@ const uint8_t BUZZER_PIN = 2;
 const uint8_t TM_CLK = 17;
 const uint8_t TM_DIO = 16;
 
-// ---- alarm settings, edit these and reflash ----
+// edit these and reflash
 const int ALARM_HOUR   = 7;
 const int ALARM_MINUTE = 30;
 const int ALARM_DISMISS_LEVEL = 5; // rounds in a row to shut it up
 
-// ---- wifi + ntp, so the clock doesn't just drift off ----
 const char* WIFI_SSID     = "your-network";
 const char* WIFI_PASSWORD = "your-password";
 const char* NTP_SERVER    = "pool.ntp.org";
 const int NTP_PORT        = 123;
 const int TIMEZONE_OFFSET_HOURS = 0; // the server speaks utc, shift to yours
-const unsigned long RESYNC_INTERVAL_MS = 6UL * 3600UL * 1000UL; // roughly every 6 hours
+const unsigned long RESYNC_INTERVAL_MS = 6UL * 3600UL * 1000UL;
 
 const uint16_t SHOW_ON_MS  = 350;
 const uint16_t SHOW_GAP_MS = 150;
 const uint16_t DEBOUNCE_MS = 20;
 
 uint8_t sequence[ALARM_DISMISS_LEVEL];
-
-// ---- clock, kept honest by the ntp pool ----
 
 unsigned long bootMillis;
 int32_t baseSecondsOfDay;
@@ -48,12 +45,11 @@ void initClockFromBuildTime() {
   bootMillis = millis();
 }
 
-// asks the pool what time it is and resets the clock
 bool syncTimeFromNtp() {
   if (WiFi.status() != WL_CONNECTED) return false;
 
   uint8_t packet[48] = {0};
-  packet[0] = 0b11100011; // plain old ntp client request
+  packet[0] = 0b11100011; // NTP v4 client request: LI=3, VN=4, mode=3
 
   ntpUdp.begin(2390);
   ntpUdp.beginPacket(NTP_SERVER, NTP_PORT);
@@ -62,7 +58,7 @@ bool syncTimeFromNtp() {
 
   unsigned long waitStart = millis();
   while (ntpUdp.parsePacket() == 0) {
-    if (millis() - waitStart > 3000) { // server never answered, give up
+    if (millis() - waitStart > 3000) {
       ntpUdp.stop();
       return false;
     }
@@ -71,7 +67,7 @@ bool syncTimeFromNtp() {
   ntpUdp.read(packet, 48);
   ntpUdp.stop();
 
-  // bytes 40-43 are seconds since 1900, straight out of the spec
+  // bytes 40-43: transmit timestamp, seconds since 1900 (RFC 5905)
   uint32_t secsSince1900 = ((uint32_t)packet[40] << 24) | ((uint32_t)packet[41] << 16) |
                             ((uint32_t)packet[42] << 8)  | (uint32_t)packet[43];
   uint32_t secsSince1970 = secsSince1900 - 2208988800UL;
@@ -88,7 +84,7 @@ int32_t secondsOfDay() {
   return s % 86400L;
 }
 
-// ---- tm1637 driver, hand rolled so we skip pulling in a library ----
+// hand-rolled TM1637 driver, avoids pulling in a library
 
 const uint8_t TM_DIGIT_SEGMENTS[10] = {
   0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f
@@ -132,16 +128,16 @@ void tmWriteByte(uint8_t b) {
 
 void tmSendSegments(const uint8_t segments[4]) {
   tmStart();
-  tmWriteByte(0x40); // tell it we're sending 4 bytes in a row
+  tmWriteByte(0x40); // 0x40: auto-increment data write
   tmStop();
 
   tmStart();
-  tmWriteByte(0xC0); // start from the first digit
+  tmWriteByte(0xC0); // 0xC0: start at digit 0
   for (int i = 0; i < 4; i++) tmWriteByte(segments[i]);
   tmStop();
 
   tmStart();
-  tmWriteByte(0x88 | 7); // screen on, brightness cranked up
+  tmWriteByte(0x88 | 7); // display on, brightness 7
   tmStop();
 }
 
@@ -153,8 +149,6 @@ void tmShowTime(int hour, int minute) {
   segments[3] = TM_DIGIT_SEGMENTS[minute % 10];
   tmSendSegments(segments);
 }
-
-// ---- setup and the main loop ----
 
 void setup() {
   for (int i = 0; i < 4; i++) {
@@ -168,7 +162,7 @@ void setup() {
 
   randomSeed(rp2040.hwrand32());
 
-  // try for real time over wifi first, fall back to build time if that flops
+  // prefer NTP time, fall back to build time if Wi-Fi/NTP fails
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   unsigned long wifiStart = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - wifiStart < 15000) {
@@ -181,7 +175,7 @@ void setup() {
 }
 
 void loop() {
-  // clocks drift, so touch base with the time server now and then
+  // re-sync from NTP periodically, clocks drift
   if (millis() - lastSyncMillis > RESYNC_INTERVAL_MS) {
     syncTimeFromNtp();
     lastSyncMillis = millis();
@@ -208,7 +202,7 @@ void loop() {
   }
 }
 
-// keeps chirping and dealing new rounds until you actually beat it
+// chirp and replay rounds until the game is beaten
 void runAlarmGame() {
   int completed = 0;
   while (completed < ALARM_DISMISS_LEVEL) {
@@ -271,14 +265,10 @@ bool readPlayerSequence(int count) {
 // waits for a press, lights and beeps that pad while it's held
 int waitForButtonPress() {
   int pad;
-  while ((pad = pollButtons()) < 0) {
-    // spin
-  }
+  while ((pad = pollButtons()) < 0) {}
   digitalWrite(LED_PINS[pad], HIGH);
   tone(BUZZER_PIN, TONES[pad]);
-  while (digitalRead(BUTTON_PINS[pad]) == LOW) {
-    // wait for release
-  }
+  while (digitalRead(BUTTON_PINS[pad]) == LOW) {}
   noTone(BUZZER_PIN);
   digitalWrite(LED_PINS[pad], LOW);
   return pad;
@@ -294,4 +284,3 @@ int pollButtons() {
   }
   return -1;
 }
-  
